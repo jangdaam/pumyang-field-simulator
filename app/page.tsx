@@ -49,6 +49,19 @@ const Key = ({ children }: { children: React.ReactNode }) => (
   <kbd>{children}</kbd>
 );
 export default function Home() {
+  const [diagnosticText, setDiagnosticText] = useState('');
+  const [diagnosticCopied, setDiagnosticCopied] = useState(false);
+  const copyDiagnostics = async () => {
+    if (!engine.current) return;
+    const report = JSON.stringify(engine.current.diagnostics(), null, 2);
+    setDiagnosticText(report);
+    try {
+      await navigator.clipboard.writeText(report);
+      setDiagnosticCopied(true);
+    } catch {
+      setDiagnosticCopied(false);
+    }
+  };
   const host = useRef<HTMLDivElement>(null),
     mini = useRef<HTMLCanvasElement>(null),
     labelHost = useRef<HTMLDivElement>(null),
@@ -559,6 +572,25 @@ export default function Home() {
                 <Play size={16} />
                 {help ? '현장 탐색하기' : '계속하기'}
               </button>
+            </div>
+            <div className="performance-help">
+              <button
+                className="secondary"
+                onClick={() => void copyDiagnostics()}
+              >
+                {diagnosticCopied ? '진단 복사됨' : '성능 진단 복사'}
+              </button>
+              <span>
+                끊김이 발생한 뒤 눌러 주세요. 기록은 자동 전송되지 않습니다.
+              </span>
+              {diagnosticText && (
+                <textarea
+                  aria-label="성능 진단 기록"
+                  readOnly
+                  value={diagnosticText}
+                  onFocus={(event) => event.currentTarget.select()}
+                />
+              )}
             </div>
           </dialog>
         </div>

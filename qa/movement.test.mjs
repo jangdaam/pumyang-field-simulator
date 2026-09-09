@@ -1,5 +1,36 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { FrameBudget, renderScale } from '../lib/field/frame-budget.ts';
+
+test('render budget stays near 60 FPS on 60/120/144/240 Hz screens', () => {
+  for (const hz of [60, 120, 144, 240]) {
+    const budget = new FrameBudget();
+    let frames = 0;
+    for (let i = 0; i < hz * 10; i++)
+      if (budget.take((i * 1000) / hz)) frames++;
+    assert.ok(
+      frames >= 590 && frames <= 601,
+      `${hz} Hz produced ${frames} frames`,
+    );
+    assert.equal(
+      budget.take(20000),
+      true,
+      'a long stall must not block resuming',
+    );
+  }
+});
+
+test('render scale bounds 4K/high-DPI GPU work without upscaling low-DPI screens', () => {
+  for (const [w, h, dpr] of [
+    [3840, 2160, 2],
+    [1920, 1080, 2],
+    [543, 794, 1],
+  ]) {
+    const scale = renderScale(w, h, dpr);
+    assert.ok(w * h * scale * scale <= 2_100_001);
+    assert.ok(scale <= dpr && scale <= 1.25);
+  }
+});
 import {
   intersectsRect,
   slideMove,

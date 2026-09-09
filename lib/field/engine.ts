@@ -1,4 +1,5 @@
 import * as T from 'three';
+import { FrameBudget, renderScale } from './frame-budget';
 import { registerFieldTools } from './webmcp';
 import { createWorld, obstacles, soilPiles } from './world';
 import {
@@ -47,6 +48,19 @@ export type FieldState = {
   labels: { id: string; text: string; x: number; y: number; type: string }[];
 };
 export class FieldEngine {
+  frameBudget = new FrameBudget();
+  cameraTarget = new T.Vector3();
+  visibleLabels = new Set<string>();
+  previousCpuMs = 0;
+  previousRenderMs = 0;
+  stalls: {
+    atSeconds: number;
+    gapMs: number;
+    previousCpuMs: number;
+    previousRenderMs: number;
+  }[] = [];
+  longTasks: { atSeconds: number; durationMs: number }[] = [];
+  taskObserver: PerformanceObserver | null = null;
   scene = new T.Scene();
   camera = new T.OrthographicCamera();
   eyeCamera = new T.PerspectiveCamera(72, 1, 0.08, 500);
@@ -63,7 +77,7 @@ export class FieldEngine {
   updateCrowd = () => {};
   labelElements = new Map<string, HTMLDivElement>();
   labelPoint = new T.Vector3();
-  frameTimes = new Float32Array(600);
+  frameTimes = new Float32Array(3600);
   frameCount = 0;
   lastAudio = 0;
   lastShadow = 0;
@@ -127,7 +141,9 @@ export class FieldEngine {
       alpha: false,
       powerPreference: 'high-performance',
     });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.65));
+    this.renderer.setPixelRatio(
+      renderScale(host.clientWidth, host.clientHeight, window.devicePixelRatio),
+    );
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.autoUpdate = false;
     this.renderer.shadowMap.type = T.PCFSoftShadowMap;
@@ -147,7 +163,7 @@ export class FieldEngine {
     const sun = new T.DirectionalLight(0xffdda2, 3.1);
     sun.position.set(-85, 61, -45);
     sun.castShadow = true;
-    sun.shadow.mapSize.set(4096, 4096);
+    sun.shadow.mapSize.set(2048, 2048);
     Object.assign(sun.shadow.camera, {
       left: -135,
       right: 135,
@@ -214,6 +230,21 @@ export class FieldEngine {
       this.onContextRestore,
     );
     this.frame(performance.now());
+    if (
+      typeof PerformanceObserver !== 'undefined' &&
+      PerformanceObserver.supportedEntryTypes.includes('longtask')
+    ) {
+      this.taskObserver = new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          this.longTasks.push({
+            atSeconds: entry.startTime / 1000,
+            durationMs: entry.duration,
+          });
+          if (this.longTasks.length > 30) this.longTasks.shift();
+        }
+      });
+      this.taskObserver.observe({ type: 'longtask' });
+    }
     this.unregisterTools = registerFieldTools(this);
     // Read-only state plus the same user commands; also a stable automation seam.
     (window as unknown as { pumyang: unknown }).pumyang = {
@@ -250,6 +281,7 @@ export class FieldEngine {
     if (!w || !h) return;
     this.width = w;
     this.height = h;
+    this.renderer.setPixelRatio(renderScale(w, h, window.devicePixelRatio));
     this.renderer.setSize(w, h);
     this.projection();
   };
@@ -796,12 +828,29 @@ export class FieldEngine {
   }
   frame = (now: number) => {
     if (this.disposed) return;
+    this.raf = requestAnimationFrame(this.frame);
+    if (document.hidden) {
+      this.last = 0;
+      return;
+    }
+    if (!this.frameBudget.take(now)) return;
+    const cpuStart = performance.now();
     const elapsed = this.last ? (now - this.last) / 1000 : 1 / 60,
       dt = Math.min(elapsed, 0.05);
     this.last = now;
-    if (!document.hidden && !this.help && !this.paused && elapsed < 0.5)
+    if (!this.help && !this.paused) {
       this.frameTimes[this.frameCount++ % this.frameTimes.length] =
         elapsed * 1000;
+      if (elapsed > 0.05) {
+        this.stalls.push({
+          atSeconds: now / 1000,
+          gapMs: elapsed * 1000,
+          previousCpuMs: this.previousCpuMs,
+          previousRenderMs: this.previousRenderMs,
+        });
+        if (this.stalls.length > 30) this.stalls.shift();
+      }
+    }
     this.fps = T.MathUtils.lerp(this.fps, 1 / Math.max(elapsed, 0.001), 0.02);
     if (!this.paused && !this.help && !document.hidden) {
       this.clock += dt;
@@ -817,8 +866,10 @@ export class FieldEngine {
       -Math.cos(this.azimuth),
     );
     const target = this.map
-      ? new T.Vector3(0, 0, -5)
-      : focus.clone().addScaledVector(forward, this.selected ? 4 : 9);
+      ? this.cameraTarget.set(0, 0, -5)
+      : this.cameraTarget
+          .copy(focus)
+          .addScaledVector(forward, this.selected ? 4 : 9);
     const wantedZoom = this.map ? 192 : this.zoom;
     if (changed) {
       this.center.copy(target);
@@ -883,11 +934,13 @@ export class FieldEngine {
       this.selected ? 0xf2b660 : 0xfff7d3,
     );
     this.updateCrowd();
-    if (now - this.lastShadow > 32) {
+    if (now - this.lastShadow > 65) {
       this.renderer.shadowMap.needsUpdate = true;
       this.lastShadow = now;
     }
+    const renderStart = performance.now();
     if (!this.contextLost) this.renderer.render(this.scene, this.activeCamera);
+    this.previousRenderMs = performance.now() - renderStart;
     this.updateLabels();
     if (now - this.lastEmit > 125) {
       this.lastEmit = now;
@@ -910,7 +963,7 @@ export class FieldEngine {
           0.2,
         );
     }
-    this.raf = requestAnimationFrame(this.frame);
+    this.previousCpuMs = performance.now() - cpuStart;
   };
   performanceStats() {
     const samples = Array.from(
@@ -923,6 +976,8 @@ export class FieldEngine {
       samples: samples.length,
       medianMs: samples[Math.floor(samples.length * 0.5)] || 0,
       p95Ms: samples[Math.floor(samples.length * 0.95)] || 0,
+      maxMs: samples.at(-1) || 0,
+      over500Ms: samples.filter((n) => n > 500).length,
       over50Ms: samples.filter((n) => n > 50).length,
       drawCalls: this.renderer.info.render.calls,
       triangles: this.renderer.info.render.triangles,
@@ -931,8 +986,12 @@ export class FieldEngine {
   updateLabels() {
     const focus = this.selected?.root.position || this.player.root.position;
     // DOM membership is stable. Only compositor transforms change at display rate.
-    for (const element of this.labelElements.values()) element.hidden = true;
-    if (this.map) return;
+    this.visibleLabels.clear();
+    if (this.map) {
+      for (const element of this.labelElements.values())
+        if (!element.hidden) element.hidden = true;
+      return;
+    }
     const project = (
       id: string,
       text: string,
@@ -962,7 +1021,8 @@ export class FieldEngine {
         this.labelHost.appendChild(element);
         this.labelElements.set(id, element);
       }
-      element.hidden = false;
+      this.visibleLabels.add(id);
+      if (element.hidden) element.hidden = false;
       element.style.transform = `translate3d(${x.toFixed(2)}px,${y.toFixed(2)}px,0) translate(-50%,-100%)`;
     };
     if (!this.selected && this.cameraMode !== 'first')
@@ -983,6 +1043,25 @@ export class FieldEngine {
       if (w.root.position.distanceToSquared(focus) < 225)
         project(`worker${i}`, w.role, w.root.position, 3.1, 'worker');
     });
+    for (const [id, element] of this.labelElements)
+      if (!this.visibleLabels.has(id) && !element.hidden) element.hidden = true;
+  }
+  diagnostics() {
+    const gl = this.renderer.getContext();
+    const info = gl.getExtension('WEBGL_debug_renderer_info');
+    return {
+      revision: 'chrome-performance-1',
+      browser: navigator.userAgent,
+      viewport: [this.width, this.height],
+      pixelRatio: this.renderer.getPixelRatio(),
+      gpu: String(
+        gl.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : gl.RENDERER),
+      ),
+      view: this.cameraMode,
+      ...this.performanceStats(),
+      stalls: this.stalls,
+      longTasks: this.longTasks,
+    };
   }
   publish() {
     const m = this.selected,
@@ -1142,6 +1221,7 @@ export class FieldEngine {
   dispose() {
     this.disposed = true;
     this.unregisterTools();
+    this.taskObserver?.disconnect();
     cancelAnimationFrame(this.raf);
     this.resize.disconnect();
     window.removeEventListener('keydown', this.onKeyDown);

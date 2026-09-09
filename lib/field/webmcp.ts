@@ -70,6 +70,7 @@ export function registerFieldTools(engine: FieldEngine) {
       moving: w.moving,
     })),
     performance: engine.performanceStats(),
+    diagnostics: engine.diagnostics(),
     traffic: engine.traffic.map((v) => ({
       kind: v.kind,
       x: v.root.position.x,

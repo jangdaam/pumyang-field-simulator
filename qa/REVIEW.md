@@ -68,3 +68,9 @@ PC 키보드/마우스용이다. 터치 조이스틱, HMD VR, 하중/유압/토�
 - Real coordinate clicks with intervening mouse movement (no drag) changed yaw by -0.35 and pitch by +0.07 for a 100 px horizontal / -20 px vertical move. Repeated after closing help and the full map with the same result.
 - Boarding still selects TPS; dismounting restores first person. Cursor locking itself was not available in the embedded test browser; the mouse-movement fallback was verified there.
 - TypeScript, lint, production build and the six existing movement tests passed.
+# Chrome periodic stutter mitigation and diagnostics — 2026-09-09
+
+- The reported Chrome-only 5–10 second stalls were not reproduced in the connected embedded browser. Incognito and window-size changes did not help the user; the root cause remains unconfirmed.
+- Removed per-frame hide/show writes for visible labels, reused the camera target vector, capped rendering at 60 FPS with a tested refresh-independent budget, limited the drawing buffer to about 2.1 million pixels, and reduced shadow updates to about 15 Hz at 2048 resolution.
+- Fixed performance accounting that previously discarded gaps of 500 ms or longer. Retain 3600 frame intervals and the last 30 stalls/long tasks. The help/pause dialog now offers a local diagnostic copy button, including GPU, viewport and preceding CPU/render submission time. No diagnostics are automatically transmitted.
+- TypeScript, lint, static build and eight tests passed, including 60/120/144/240 Hz pacing and high-DPI pixel-budget checks. Embedded-browser visual review preserved the warm shadow style; first-person/TPS and diagnostic copying worked. The initial 18-second run recorded one startup stall and no later >50 ms frames. This does not establish that the user's Chrome stall is resolved.
