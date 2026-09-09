@@ -128,27 +128,22 @@ export default function Home() {
         <>
           <div className="eye-reticle" aria-hidden="true" />
           <div className="look-hint">
-            마우스 드래그 · 둘러보기 <span>방향키도 사용 가능</span>
+            마우스 이동 · 둘러보기{' '}
+            <span>화면 클릭 · 커서 고정 / Esc · 해제</span>
           </div>
         </>
       )}
 
       <header className="topbar">
         <div className="identity">
-          <span className="brand-symbol">
+          <div className="header-company-logo">
             <Image
-              src="/pumyang-symbol.svg"
-              alt=""
-              width={34}
-              height={34}
+              src="/pumyang-logo.svg"
+              alt="(주)범양이엔씨"
+              width={242}
+              height={52}
               unoptimized
             />
-          </span>
-          <div>
-            <strong>
-              PUMYANG <span>E&C</span>
-            </strong>
-            <small>FIELD SIMULATOR</small>
           </div>
           <i />
           <div className="title-block">
@@ -236,15 +231,6 @@ export default function Home() {
         </aside>
       )}
       <div className="world-labels" ref={labelHost} aria-hidden="true" />
-      <div className="company-logo">
-        <Image
-          src="/pumyang-logo.svg"
-          alt="(주)범양이엔씨"
-          width={242}
-          height={52}
-          unoptimized
-        />
-      </div>
       <aside className="map-panel">
         <div className="map-heading">
           <span>
@@ -430,7 +416,7 @@ export default function Home() {
             </span>
             <span className="scroll-hint">
               {s.cameraMode === 'first'
-                ? '드래그 · 둘러보기'
+                ? '마우스 이동 · 둘러보기'
                 : '휠 · 확대/축소'}
             </span>
             <button onClick={() => setHelp(true)}>
@@ -515,7 +501,7 @@ export default function Home() {
                 {[
                   ['W A S D', '보는 방향으로 이동'],
                   ['V', '탑뷰 / 1인칭 모드 전환'],
-                  ['드래그 / 방향키', '1인칭에서 시선 회전'],
+                  ['마우스 이동 / 방향키', '1인칭에서 시선 회전'],
                   ['Shift', '빠르게 이동'],
                   ['F', '가까운 장비 탑승 / 하차'],
                   ['M', '전체 현장 보기'],

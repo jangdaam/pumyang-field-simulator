@@ -60,3 +60,11 @@ PC 키보드/마우스용이다. 터치 조이스틱, HMD VR, 하중/유압/토�
 - New production build's last 600 frames: median 16.7 ms, p95 17.1 ms, zero frames above 50 ms. This local sample does not guarantee identical results on other hardware. Raw state: `baseline-v2.json`, `production-build-check.json`, `revision-3-playtest.json`.
 - Screenshots 08–12 record the revised TPS, truck, full scene and walking views. Browser viewport override did not change the actual 1440 × 900 viewport, so no 1280 × 720 verification is claimed.
 - Development hot reload briefly produced a duplicate-React error while introducing Image. Reload recovered; production build and fresh production page executed correctly. Historical browser logs are retained across navigation and must be filtered by the production page's origin.
+# 2026-09-09: header logo and first-person mouse look
+
+- Moved the original brochure SVG into the top-left identity panel and removed the bottom-left instance and former English wordmark.
+- Replaced pointer capture / held-button dragging with mouse movement. Pointer lock is requested on first-person activation or scene click; unsupported hosts retain unlocked mouse look. Esc releases a supported pointer lock.
+- Production preview checked at the in-app browser's 543 × 794 viewport: logo is legible, appears once, and clears the toolbar and equipment list.
+- Real coordinate clicks with intervening mouse movement (no drag) changed yaw by -0.35 and pitch by +0.07 for a 100 px horizontal / -20 px vertical move. Repeated after closing help and the full map with the same result.
+- Boarding still selects TPS; dismounting restores first person. Cursor locking itself was not available in the embedded test browser; the mouse-movement fallback was verified there.
+- TypeScript, lint, production build and the six existing movement tests passed.

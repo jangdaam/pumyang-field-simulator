@@ -1215,23 +1215,22 @@ kbd {
 .world-label[hidden] {
   display: none;
 }
-.company-logo {
-  position: absolute;
-  left: 27px;
-  bottom: 102px;
-  padding: 14px 17px;
-  width: 226px;
-  border: 1px solid #ffffff65;
-  border-radius: 12px;
-  background: #f4f1e5ed;
-  box-shadow: 0 5px 20px #203b3214;
-  pointer-events: none;
+.header-company-logo {
+  width: 205px;
+  padding: 9px 12px;
+  background: #24483f;
+  border-radius: 9px;
+  flex-shrink: 0;
 }
-.company-logo img {
+.header-company-logo img {
   display: block;
   width: 100%;
-  height: 44px;
-  object-fit: contain;
+  height: auto;
+}
+@media (max-width: 800px) {
+  .header-company-logo {
+    width: 170px;
+  }
 }
 .view-tps .cockpit {
   width: 620px;
@@ -1247,22 +1246,6 @@ kbd {
 .truck-cockpit .telemetry {
   grid-template-columns: 1fr 1fr 1fr;
 }
-@media (max-height: 760px) {
-  .company-logo {
-    bottom: 85px;
-    width: 190px;
-    padding: 10px 12px;
-  }
-  .company-logo img {
-    height: 34px;
-  }
-}
-
-.company-logo {
-  background: #24483fed;
-  border-color: #ffffff2b;
-}
-
 .brand-symbol {
   background: #25483f;
 }

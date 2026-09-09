@@ -53,7 +53,8 @@ export class FieldEngine {
   firstPerson = false;
   lookYaw = 0;
   lookPitch = -0.06;
-  lookDrag: { id: number; x: number; y: number } | null = null;
+  freeLookEnabled = false;
+  lockRequest = 0;
   lastCameraMode = '';
   tpsDistance = 13;
   tpsOrbit = 0;
@@ -201,9 +202,8 @@ export class FieldEngine {
     host.addEventListener('wheel', this.onWheel, { passive: false });
     host.addEventListener('pointerdown', this.onLookStart);
     host.addEventListener('pointermove', this.onLookMove);
-    host.addEventListener('pointerup', this.onLookEnd);
-    host.addEventListener('pointercancel', this.onLookEnd);
-    host.addEventListener('lostpointercapture', this.onLookEnd);
+    document.addEventListener('mousemove', this.onLockedLookMove);
+    document.addEventListener('pointerlockchange', this.onPointerLockChange);
     host.addEventListener('contextmenu', this.onContextMenu);
     this.renderer.domElement.addEventListener(
       'webglcontextlost',
@@ -273,6 +273,10 @@ export class FieldEngine {
       e.preventDefault();
     if (!e.repeat) {
       if (e.code === 'Escape') {
+        if (document.pointerLockElement === this.host) {
+          this.endLook();
+          return;
+        }
         if (!this.help) this.setPaused(!this.paused);
         return;
       }
@@ -340,31 +344,69 @@ export class FieldEngine {
       this.cameraMode !== 'first' ||
       this.paused ||
       this.help ||
-      ![0, 2].includes(e.button)
+      e.button !== 0
     )
       return;
-    e.preventDefault();
+    this.freeLookEnabled = true;
+    this.requestLookLock();
+  };
+  requestLookLock() {
+    if (
+      this.cameraMode !== 'first' ||
+      this.paused ||
+      this.help ||
+      this.disposed
+    )
+      return;
     this.renderer.domElement.focus({ preventScroll: true });
-    this.lookDrag = { id: e.pointerId, x: e.clientX, y: e.clientY };
-    this.host.setPointerCapture(e.pointerId);
-    this.host.classList.add('looking');
-  };
+    const request = ++this.lockRequest;
+    try {
+      // A browser may require the user's click before pointer lock is available.
+      // Ordinary mouse motion remains usable when lock is unavailable.
+      Promise.resolve(this.host.requestPointerLock())
+        .then(() => {
+          if (
+            request !== this.lockRequest ||
+            this.cameraMode !== 'first' ||
+            this.paused ||
+            this.help ||
+            this.disposed
+          ) {
+            if (document.pointerLockElement === this.host)
+              document.exitPointerLock();
+          }
+        })
+        .catch(() => {});
+    } catch {
+      /* The unlocked mouse-move fallback stays available. */
+    }
+  }
   onLookMove = (e: PointerEvent) => {
-    const drag = this.lookDrag;
-    if (!drag || drag.id !== e.pointerId) return;
-    this.lookBy(-(e.clientX - drag.x) * 0.0035, -(e.clientY - drag.y) * 0.0035);
-    drag.x = e.clientX;
-    drag.y = e.clientY;
+    if (
+      document.pointerLockElement ||
+      !this.freeLookEnabled ||
+      e.pointerType === 'touch'
+    )
+      return;
+    this.lookBy(-e.movementX * 0.0035, -e.movementY * 0.0035);
   };
-  onLookEnd = (e: PointerEvent) => {
-    if (this.lookDrag?.id === e.pointerId) this.endLook();
+  onLockedLookMove = (e: MouseEvent) => {
+    if (document.pointerLockElement !== this.host) return;
+    this.lookBy(-e.movementX * 0.0035, -e.movementY * 0.0035);
+  };
+  onPointerLockChange = () => {
+    const locked = document.pointerLockElement === this.host;
+    this.host.classList.toggle('looking', locked);
+    if (!locked) {
+      this.keys.clear();
+      this.freeLookEnabled = false;
+    }
   };
   endLook() {
-    const id = this.lookDrag?.id;
-    this.lookDrag = null;
+    ++this.lockRequest;
+    this.freeLookEnabled = false;
     this.host.classList.remove('looking');
-    if (id !== undefined && this.host.hasPointerCapture(id))
-      this.host.releasePointerCapture(id);
+    if (document.pointerLockElement === this.host) document.exitPointerLock();
   }
   onContextMenu = (e: MouseEvent) => {
     if (this.cameraMode === 'first') e.preventDefault();
@@ -377,6 +419,8 @@ export class FieldEngine {
     if (this.firstPerson && !this.selected) {
       this.lookYaw = this.player.root.rotation.y;
       this.lookPitch = -0.06;
+      this.freeLookEnabled = true;
+      this.requestLookLock();
     }
     if (this.selected) this.selected.speed = 0;
     this.publish();
@@ -399,6 +443,7 @@ export class FieldEngine {
     if (this.help || this.paused) return;
     this.map = !this.map;
     this.endLook();
+    this.freeLookEnabled = this.cameraMode === 'first';
     this.keys.clear();
     if (this.selected) this.selected.speed = 0;
     this.publish();
@@ -414,6 +459,7 @@ export class FieldEngine {
   setHelp(v: boolean) {
     this.help = v;
     this.endLook();
+    this.freeLookEnabled = !v && !this.paused && this.cameraMode === 'first';
     this.keys.clear();
     if (this.selected) this.selected.speed = 0;
   }
@@ -423,6 +469,7 @@ export class FieldEngine {
   setPaused(v: boolean) {
     this.paused = v;
     this.endLook();
+    this.freeLookEnabled = !v && !this.help && this.cameraMode === 'first';
     this.keys.clear();
     if (this.selected) this.selected.speed = 0;
     this.publish();
@@ -468,6 +515,8 @@ export class FieldEngine {
           m.speed = 0;
           m.spinning = false;
           this.selected = null;
+          this.freeLookEnabled = this.firstPerson;
+          if (this.firstPerson) this.requestLookLock();
           this.keys.clear();
           this.emitEvent('equipment-exited', { id: m.id });
           this.publish();
@@ -1103,9 +1152,8 @@ export class FieldEngine {
     this.host.removeEventListener('wheel', this.onWheel);
     this.host.removeEventListener('pointerdown', this.onLookStart);
     this.host.removeEventListener('pointermove', this.onLookMove);
-    this.host.removeEventListener('pointerup', this.onLookEnd);
-    this.host.removeEventListener('pointercancel', this.onLookEnd);
-    this.host.removeEventListener('lostpointercapture', this.onLookEnd);
+    document.removeEventListener('mousemove', this.onLockedLookMove);
+    document.removeEventListener('pointerlockchange', this.onPointerLockChange);
     this.host.removeEventListener('contextmenu', this.onContextMenu);
     this.renderer.domElement.removeEventListener(
       'webglcontextlost',
