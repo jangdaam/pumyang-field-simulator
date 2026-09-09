@@ -1,0 +1,129 @@
+{
+  "viewport": [1440, 900],
+  "cameraMode": "top",
+  "cameraPosition": [17.66904755831213, 90, 75.66904755831214],
+  "drawCalls": 370,
+  "fps": 60,
+  "help": false,
+  "look": {
+    "pitch": -0.06,
+    "yaw": 0
+  },
+  "machines": [
+    {
+      "boom": 57,
+      "cable": 8,
+      "id": "crane",
+      "jaw": 0.35,
+      "slew": 0,
+      "spinning": false,
+      "x": -28,
+      "z": 22
+    },
+    {
+      "boom": 84,
+      "cable": 6,
+      "id": "cutter",
+      "jaw": 0.35,
+      "slew": 0,
+      "spinning": false,
+      "x": 49,
+      "z": -10
+    },
+    {
+      "boom": 68,
+      "cable": 6,
+      "id": "grab",
+      "jaw": 0.35,
+      "slew": 0,
+      "spinning": false,
+      "x": -49,
+      "z": -23
+    }
+  ],
+  "map": false,
+  "mode": "walk",
+  "near": "crane",
+  "paused": false,
+  "playerVisible": true,
+  "selected": null,
+  "triangles": 22696,
+  "viewPreference": "top",
+  "waypoint": null,
+  "workers": [
+    {
+      "moving": true,
+      "role": "자재 운반",
+      "x": 22.13480666666677,
+      "z": 40
+    },
+    {
+      "moving": true,
+      "role": "자재 운반",
+      "x": 72.17292648511952,
+      "z": 24.85398188867579
+    },
+    {
+      "moving": true,
+      "role": "자재 운반",
+      "x": -57.8731493280071,
+      "z": 27.675840467630312
+    },
+    {
+      "moving": true,
+      "role": "현장 감독",
+      "x": 15.291920000000143,
+      "z": 16
+    },
+    {
+      "moving": true,
+      "role": "현장 감독",
+      "x": -1.239770000000065,
+      "z": -43
+    },
+    {
+      "moving": false,
+      "role": "신호수",
+      "x": -21.61342999999996,
+      "z": 23
+    },
+    {
+      "moving": true,
+      "role": "신호수",
+      "x": 48.66730400000001,
+      "z": 2.00047799999997
+    },
+    {
+      "moving": false,
+      "role": "신호수",
+      "x": -44.90852147389239,
+      "z": -14.365914104430514
+    },
+    {
+      "moving": true,
+      "role": "설비 점검",
+      "x": -76.37175665268923,
+      "z": -30.36264470963183
+    },
+    {
+      "moving": true,
+      "role": "설비 점검",
+      "x": 47.25370752889789,
+      "z": -34.22620046330851
+    },
+    {
+      "moving": true,
+      "role": "자재 운반",
+      "x": 72.57397652957991,
+      "z": 34.73026341564247
+    },
+    {
+      "moving": true,
+      "role": "현장 감독",
+      "x": -47.76314112933105,
+      "z": 48.911992812437646
+    }
+  ],
+  "x": -29,
+  "z": 29
+}

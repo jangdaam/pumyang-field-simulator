@@ -1,0 +1,78 @@
+[
+  {
+    "test": "crane boundary and articulation",
+    "state": {
+      "boom": 49.99999999999991,
+      "cable": 12.399999999999991,
+      "id": "crane",
+      "jaw": 0.35,
+      "slew": 0.8470139999999996,
+      "spinning": false,
+      "x": -26.259092865735663,
+      "z": 17.401311544670094
+    }
+  },
+  {
+    "test": "grab open slew lower",
+    "state": {
+      "boom": 68,
+      "cable": 8.896740000000026,
+      "id": "grab",
+      "jaw": 1,
+      "slew": 0.5530140000000048,
+      "spinning": false,
+      "x": -49,
+      "z": -23
+    }
+  },
+  {
+    "test": "grab close raise reverse steer",
+    "state": {
+      "boom": 68,
+      "cable": 6.916740000000026,
+      "id": "grab",
+      "jaw": 0.10000000000000007,
+      "slew": 0.5530140000000048,
+      "spinning": false,
+      "x": -47.67557343895832,
+      "z": -22.980013822205777
+    }
+  },
+  {
+    "test": "cutter rotate lower slew guide",
+    "state": {
+      "boom": 75,
+      "cable": 8.640220000000076,
+      "id": "cutter",
+      "jaw": 0,
+      "slew": -0.5040420000000146,
+      "spinning": true,
+      "x": 49,
+      "z": -10
+    }
+  },
+  {
+    "test": "pause rejects movement",
+    "result": "Error: Browser Use encountered an error interacting with this webpage: Error: Controls unavailable while busy or an overlay is open"
+  },
+  {
+    "test": "pause freezes actors",
+    "passed": true
+  },
+  {
+    "name": "read_field_state",
+    "error": "Error: Browser Use encountered an error interacting with this webpage: Error: Invalid fields"
+  },
+  {
+    "name": "navigate_field",
+    "error": "Error: Browser Use encountered an error interacting with this webpage: Error: Unknown destination"
+  },
+  {
+    "name": "hold_field_controls",
+    "error": "Error: Browser Use encountered an error interacting with this webpage: Error: Invalid controls or duration"
+  },
+  {
+    "test": "map prevents boarding",
+    "result": "Error: Browser Use encountered an error interacting with this webpage: Error: Close overlays and resume first"
+  }
+]
