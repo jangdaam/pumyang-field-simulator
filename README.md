@@ -1,5 +1,9 @@
 # 범양 현장훈련장
 
+**[브라우저에서 바로 실행하기](https://jangdaam.github.io/pumyang-field-simulator/)** — 로그인이나 설치가 필요 없습니다.
+
+GitHub Pages는 `.github/workflows/pages.yml`을 통해 `main`의 변경 내용을 자동 배포합니다. `npm run build:pages`로 동일한 정적 파일을 만들고 `npm run preview:pages`로 미리 볼 수 있습니다. 기존 Sites 빌드도 유지합니다.
+
 신규 입직자를 위한 PC 브라우저용 3D 보행·건설장비 자유 조작 게임입니다. React UI와 Three.js 장면을 분리했고, 현장은 직접 만든 로우폴리 형상과 오후의 따뜻한 조명으로 구성했습니다.
 
 ## 실행
